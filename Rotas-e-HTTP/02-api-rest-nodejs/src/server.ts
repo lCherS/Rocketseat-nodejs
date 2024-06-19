@@ -1,17 +1,5 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import fastify from 'fastify'
-import cookie from '@fastify/cookie'
 import { env } from './env'
-import { transactionsRoutes } from './routes/transactions'
-
-const app = fastify()
-
-app.register(cookie)
-
-app.register(transactionsRoutes, {
-  prefix: 'transactions',
-})
+import { app } from './app'
 
 app
   .listen({
