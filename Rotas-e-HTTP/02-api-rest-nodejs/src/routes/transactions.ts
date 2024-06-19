@@ -1,40 +1,75 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import { FastifyInstance, fastify } from 'fastify'
+import { FastifyReply, FastifyRequest, FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import crypto from 'node:crypto'
 import { knex } from '../database'
+import { checkSessionIdExists } from '../middlewares/check-session-id-exists'
 
 export async function transactionsRoutes(app: FastifyInstance) {
   // Lista todas as transações
-  app.get('/', async () => {
-    const transactions = await knex('transactions').select('*')
+  app.get(
+    '/',
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (req: FastifyRequest) => {
+      const { sessionId } = req.cookies
 
-    return { transactions }
-  })
+      const transactions = await knex('transactions')
+        .where('session_id', sessionId)
+        .select()
+
+      return { transactions }
+    },
+  )
   // Soma os valores das transações
-  app.get('/summary', async () => {
-    const summary = await knex('transactions').sum('amount', { as: 'amount' })
-      .first
+  app.get(
+    '/summary',
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (req: FastifyRequest) => {
+      const { sessionId } = req.cookies
 
-    return { summary }
-  })
+      const summary = await knex('transactions')
+        .where('session_id', sessionId)
+        .sum('amount', { as: 'amount' })
+        .first()
+
+      console.log(summary)
+      return { summary }
+    },
+  )
 
   // Procura uma transação unica
-  app.get('/:id', async (req: fastify.request) => {
-    const getTransactionParamsSchema = z.object({
-      id: z.string().uuid(),
-    })
+  app.get(
+    '/:id',
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (req: FastifyRequest) => {
+      const { sessionId } = req.cookies
 
-    const { id } = getTransactionParamsSchema.parse(req.params)
+      const getTransactionParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
 
-    const transaction = await knex('transactions').where('id', id).first()
+      const { id } = getTransactionParamsSchema.parse(req.params)
 
-    return { transaction }
-  })
+      const transaction = await knex('transactions')
+        .where({
+          session_id: sessionId,
+          id,
+        })
+        .first()
+
+      return { transaction }
+    },
+  )
 
   // Cria uma nova transação
-  app.post('/', async (req: fastify.request, reply: fastify.reply) => {
+  app.post('/', async (req: FastifyRequest, reply: FastifyReply) => {
     const createTransactionBodySchema = z.object({
       title: z.string(),
       amount: z.number(),
