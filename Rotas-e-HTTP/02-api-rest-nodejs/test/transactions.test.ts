@@ -1,15 +1,6 @@
-import {
-  expect,
-  it,
-  test,
-  beforeAll,
-  afterAll,
-  describe,
-  beforeEach,
-} from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { execSync } from 'node:child_process'
 import request from 'supertest'
-
 import { app } from '../src/app'
 
 describe('Transactions routes', () => {
@@ -30,8 +21,8 @@ describe('Transactions routes', () => {
     await request(app.server)
       .post('/transactions')
       .send({
-        title: 'New Transaction',
-        amount: 324,
+        title: 'New transaction',
+        amount: 5000,
         type: 'credit',
       })
       .expect(201)
@@ -41,24 +32,25 @@ describe('Transactions routes', () => {
     const createTransactionResponse = await request(app.server)
       .post('/transactions')
       .send({
-        title: 'New Transaction',
-        amount: 321,
-        type: 'debit',
+        title: 'New transaction',
+        amount: 5000,
+        type: 'credit',
       })
+
     const cookies = createTransactionResponse.get('Set-Cookie')
 
-    const listTransactionResponse = await request(app.server)
+    const listTransactionsResponse = await request(app.server)
       .get('/transactions')
       .set('Cookie', cookies)
       .expect(200)
 
-    expect(listTransactionResponse.body.transactions).toEqual([
+    expect(listTransactionsResponse.body.transactions).toEqual([
       expect.objectContaining({
-        title: 'New Transaction',
-        amount: -321,
+        title: 'New transaction',
+        amount: 5000,
       }),
     ])
-  }) // x
+  })
 
   it('should be able to get a specific transaction', async () => {
     const createTransactionResponse = await request(app.server)
